@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Graficador tipo Aviator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; }
+        .inputs { margin-bottom: 10px; }
+        .inputs input { width: 120px; margin-right: 5px; }
+        #semillas-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            margin: 20px 0 20px 0;
+            min-height: 48px;
+            user-select: none;
+            flex-wrap: wrap;
+        }
+        .semilla {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            margin-right: 8px;
+            margin-bottom: 8px;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.2em;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            box-shadow: 1px 1px 6px rgba(0,0,0,0.13);
+            transition: background 0.2s;
+            position: relative;
+        }
+        .azul { background: #1976d2; }
+        .violet { background: #8e24aa; }
+        .fuccia { background: #e040fb; }
+        .borrar-btn {
+            margin-left: 10px;
+            padding: 6px 16px;
+            background: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .borrar-btn:hover { background: #b71c1c; }
+        .cerrar {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #fff;
+            color: #e53935;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 16px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #e53935;
+            font-weight: bold;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #grafico {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            padding: 10px;
+            max-width: 1000px;
+            margin: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h3>
+        Ingresa el valor de cada ronda y haz clic en "Agregar" o presiona Enter.<br>
+        Haz clic en la "X" de una semilla para borrarla.<br>
+        También puedes usar "Borrar semilla" o la tecla Delete/Backspace para eliminar la última.<br>
+        <span style="color:#1976d2">Menor a 2: azul, 2 a 5: violeta, mayor a 5: fuccia.</span>
+    </h3>
+    <div class="inputs">
+        <input type="number" id="valor" placeholder="Valor de ronda" step="any">
+        <button onclick="agregarDato()" id="agregar-btn">Agregar</button>
+        <button class="borrar-btn" onclick="borrarSemilla()">Borrar semilla</button>
+    </div>
+    <div id="semillas-container"></div>
+    <div>
+        <canvas id="grafico" width="1000" height="500"></canvas>
+    </div>
+    <script>
+        let datos = [];
+        let chart;
+
+        function colorSemilla(valor) {
+            if (valor > 5) return 'fuccia';
+            if (valor >= 2) return 'violet';
+            return 'azul';
+        }
+
+        function actualizarSemillas() {
+            const semillasDiv = document.getElementById('semillas-container');
+            semillasDiv.innerHTML = '';
+            datos.forEach((valor, idx) => {
+                const semilla = document.createElement('div');
+                semilla.className = 'semilla ' + colorSemilla(valor);
+                semilla.textContent = valor;
+
+                // Botón X para borrar individual
+                const cerrar = document.createElement('span');
+                cerrar.className = 'cerrar';
+                cerrar.textContent = '×';
+                cerrar.title = 'Borrar este valor';
+                cerrar.onclick = function(e) {
+                    e.stopPropagation();
+                    datos.splice(idx, 1);
+                    actualizarSemillas();
+                    actualizarGrafico();
+                };
+                semilla.appendChild(cerrar);
+
+                semillasDiv.appendChild(semilla);
+            });
+        }
+
+        function actualizarGrafico() {
+            const ctx = document.getElementById('grafico').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: datos.map((_, i) => i + 1),
+                    datasets: [{
+                        label: 'Prueba',
+                        data: datos,
+                        borderColor: 'purple',
+                        backgroundColor: 'rgba(142,36,170,0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 8,
+                        pointBackgroundColor: 'purple',
+                        pointBorderWidth: 2,
+                        pointBorderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Valor: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Ronda', color: '#333' },
+                            grid: { color: '#eee' },
+                            ticks: { color: '#666' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Valor', color: '#333' },
+                            grid: { color: '#eee' },
+                            ticks: { color: '#666' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function agregarDato() {
+            const v = parseFloat(document.getElementById('valor').value);
+            if (isNaN(v)) {
+                alert('Por favor, ingresa un valor.');
+                return;
+            }
+            datos.push(v);
+            actualizarSemillas();
+            actualizarGrafico();
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+
+        function borrarSemilla() {
+            if (datos.length > 0) {
+                datos.pop();
+                actualizarSemillas();
+                actualizarGrafico();
+            }
+        }
+
+        // Permitir agregar con Enter y borrar con Backspace/Delete en el input
+        document.getElementById('valor').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                agregarDato();
+            }
+            if ((event.key === 'Backspace' || event.key === 'Delete') && this.value === '') {
+                borrarSemilla();
+                event.preventDefault();
+            }
+        });
+
+        // Permitir borrar con Backspace/Delete en toda la página si el input no está enfocado
+        document.addEventListener('keydown', function(event) {
+            const input = document.getElementById('valor');
+            if ((event.key === 'Backspace' || event.key === 'Delete') && document.activeElement !== input) {
+                borrarSemilla();
+                event.preventDefault();
+            }
+        });
+
+        // Inicializar
+        actualizarSemillas();
+        actualizarGrafico();
+    </script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cascada tipo Aviator con RSI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #ffe0b2 0%, #ffb74d 50%, #ffccbc 100%);
+        }
+        .inputs { margin-bottom: 10px; }
+        .inputs input { width: 120px; margin-right: 5px; }
+        #semillas-container {
+            display: flex;
+            flex-direction: row-reverse;
+            align-items: flex-end;
+            margin: 20px 0 20px 0;
+            min-height: 60px;
+            user-select: none;
+            flex-wrap: wrap-reverse;
+            overflow-x: auto;
+            max-width: 1000px;
+            background: #fffde7;
+            border-radius: 12px;
+            padding: 8px 0 8px 0;
+            box-shadow: 0 2px 8px rgba(255,152,0,0.08);
+        }
+        .semilla {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            margin-left: 8px;
+            margin-bottom: 8px;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 1.2em;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            box-shadow: 1px 1px 6px rgba(0,0,0,0.13);
+            transition: background 0.2s;
+            position: relative;
+        }
+        .resultado {
+            font-size: 0.9em;
+            color: #333;
+            background: #fff;
+            border-radius: 8px;
+            padding: 2px 6px;
+            margin-top: 2px;
+            margin-bottom: -10px;
+            border: 1px solid #ccc;
+        }
+        .azul { background: #1976d2; }
+        .violet { background: #8e24aa; }
+        .fuccia { background: #e040fb; }
+        .borrar-btn {
+            margin-left: 10px;
+            padding: 6px 16px;
+            background: #e53935;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .borrar-btn:hover { background: #b71c1c; }
+        .cerrar {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #fff;
+            color: #e53935;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 16px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #e53935;
+            font-weight: bold;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #grafico-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: auto;
+            background: #fffbeee0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            padding: 10px 0 30px 0;
+        }
+        #grafico {
+            width: 100% !important;
+            min-height: 500px !important;
+            max-height: 650px !important;
+            aspect-ratio: 2.5/1;
+            display: block;
+        }
+        #aciertos-perdidas {
+            background: #fffde7;
+            border: 2px solid #ffb300;
+            border-radius: 12px;
+            padding: 12px 24px;
+            max-width: 600px;
+            margin: 24px auto 0 auto;
+            font-size: 1.18em;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+        }
+        #aciertos-perdidas span {
+            color: #1976d2;
+            font-size: 1.18em;
+        }
+        #efectividad {
+            color: #43a047;
+            font-weight: bold;
+            font-size: 1.18em;
+            margin-left: 18px;
+        }
+        #estadisticas {
+            background: rgba(255,255,255,0.98);
+            border-radius: 18px;
+            box-shadow: 0 6px 32px rgba(255,152,0,0.12);
+            border: 2px solid #ff9800;
+            padding: 24px 5vw;
+            max-width: 900px;
+            margin: 24px auto 0 auto;
+            font-size: 1.18em;
+            font-weight: bold;
+            color: #333;
+            transition: all 0.3s;
+        }
+        @media (max-width: 700px) {
+            #estadisticas {
+                padding: 18px 2vw;
+                font-size: 1em;
+                max-width: 98vw;
+            }
+            #grafico-container {
+                max-width: 98vw;
+            }
+            #aciertos-perdidas {
+                padding: 10px 2vw;
+                font-size: 1em;
+                max-width: 98vw;
+            }
+        }
+        .prediccion {
+            font-weight: bold;
+            color: #1976d2;
+            font-size: 1.2em;
+        }
+        #alertas {
+            max-width: 900px;
+            margin: 16px auto 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .alerta-tarjeta {
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-size: 1.08em;
+            font-weight: bold;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 7px solid;
+            animation: fadeIn 0.7s;
+        }
+        .alerta-caida { background: linear-gradient(90deg, #ffe0b2 60%, #ff7043 100%); color: #b71c1c; border-color: #ff7043;}
+        .alerta-entrada { background: linear-gradient(90deg, #e3fcec 60%, #43a047 100%); color: #1b5e20; border-color: #43a047;}
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+    </style>
+</head>
+<body>
+    <h3>
+        Ingresa el valor de cada ronda y haz clic en "Agregar" o presiona Enter.<br>
+        Cada semilla muestra el valor y debajo el resultado de la fórmula.<br>
+        El gráfico muestra la suma acumulada de esos resultados (tipo cascada).<br>
+        <span style="color:#1976d2">Menor a 2: azul, 2 a 5: violeta, mayor a 5: fuccia.</span>
+    </h3>
+    <div class="inputs">
+        <input type="number" id="valor" placeholder="Valor de ronda" step="any">
+        <button onclick="agregarDato()" id="agregar-btn">Agregar</button>
+        <button class="borrar-btn" onclick="borrarSemilla()">Borrar semilla</button>
+    </div>
+    <div id="semillas-container"></div>
+    <div id="grafico-container">
+        <canvas id="grafico"></canvas>
+    </div>
+    <div id="aciertos-perdidas">
+        <span><b>Aciertos:</b> <span id="aciertos">0</span></span>
+        <span><b>Perdidas:</b> <span id="perdidas">0</span></span>
+        <span id="efectividad">Efectividad: 0%</span>
+    </div>
+    <div id="estadisticas"></div>
+    <div id="alertas"></div>
+    <script>
+        let datos = [];
+        let predicciones = [];
+        let chart;
+        let autoScroll = true;
+
+        function calcularEMA(arr, n) {
+            let ema = [];
+            let k = 2 / (n + 1);
+            let prev = arr[0] || 0;
+            ema.push(prev);
+            for (let i = 1; i < arr.length; i++) {
+                let val = arr[i] * k + prev * (1 - k);
+                ema.push(val);
+                prev = val;
+            }
+            return ema;
+        }
+
+        function calcularRSI(arr, n) {
+            let rsi = [];
+            if (arr.length < n + 1) {
+                for (let i = 0; i < arr.length; i++) rsi.push(null);
+                return rsi;
+            }
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= n; i++) {
+                let diff = arr[i] - arr[i - 1];
+                if (diff >= 0) gains += diff;
+                else losses -= diff;
+            }
+            gains /= n;
+            losses /= n;
+            let rs = losses === 0 ? 100 : gains / losses;
+            rsi[n] = 100 - (100 / (1 + rs));
+            for (let i = n + 1; i < arr.length; i++) {
+                let diff = arr[i] - arr[i - 1];
+                let gain = diff > 0 ? diff : 0;
+                let loss = diff < 0 ? -diff : 0;
+                gains = (gains * (n - 1) + gain) / n;
+                losses = (losses * (n - 1) + loss) / n;
+                rs = losses === 0 ? 100 : gains / losses;
+                rsi[i] = 100 - (100 / (1 + rs));
+            }
+            for (let i = 0; i < n; i++) rsi[i] = null;
+            return rsi;
+        }
+
+        function detectarEntradas(arr, niveles) {
+            let entradas = [];
+            for (let nivel of niveles) {
+                for (let i = 1; i < arr.length; i++) {
+                    if (arr[i - 1] < nivel && arr[i] >= nivel) {
+                        entradas.push({ ronda: i + 1, nivel, tipo: "sube" });
+                    }
+                    if (arr[i - 1] > nivel && arr[i] <= nivel) {
+                        entradas.push({ ronda: i + 1, nivel, tipo: "baja" });
+                    }
+                }
+            }
+            return entradas;
+        }
+
+        // Moda de los últimos 7 coeficientes, si hay empate usa promedio de los últimos 3
+        function predecirCoeficiente(valores, n = 7) {
+            if (valores.length === 0) return null;
+            let ultimos = valores.slice(-n);
+            let freq = {};
+            ultimos.forEach(v => {
+                let key = v.toFixed(2);
+                freq[key] = (freq[key] || 0) + 1;
+            });
+            let maxFreq = Math.max(...Object.values(freq));
+            let modas = Object.keys(freq).filter(k => freq[k] === maxFreq);
+            let prediccion;
+            if (modas.length === 1) {
+                prediccion = parseFloat(modas[0]);
+            } else {
+                // Si hay empate, usa promedio de los últimos 3
+                let ult3 = ultimos.slice(-3);
+                prediccion = ult3.reduce((a, b) => a + b, 0) / ult3.length;
+            }
+            return prediccion;
+        }
+
+        // Predicción de acumulado usando la predicción del coeficiente
+        function prediccionProximaRonda() {
+            const acumulados = acumuladoResultados();
+            if (acumulados.length === 0) return null;
+            let predCoef = predecirCoeficiente(datos, 7);
+            if (predCoef === null) return null;
+            let resultado = resultadoFormula(predCoef);
+            let pred = acumulados[acumulados.length - 1] + resultado;
+            return pred;
+        }
+
+        function alertasPrediccion() {
+            const acumulados = acumuladoResultados();
+            if (acumulados.length < 3) return [];
+            let pred = prediccionProximaRonda();
+            const niveles = [3, 2, 1.7, 1.5];
+            let alertas = [];
+            for (let nivel of niveles) {
+                if (acumulados[acumulados.length - 1] >= nivel && pred < nivel) {
+                    alertas.push({
+                        mensaje: `¡Alerta! El acumulado podría caer por debajo de ${nivel} en la próxima ronda (Predicción: ${pred !== null ? pred.toFixed(2) : "?"})`,
+                        tipo: "caida"
+                    });
+                }
+                if (acumulados[acumulados.length - 1] <= nivel && pred > nivel) {
+                    alertas.push({
+                        mensaje: `¡Alerta! El acumulado podría subir por encima de ${nivel} en la próxima ronda (Predicción: ${pred !== null ? pred.toFixed(2) : "?"})`,
+                        tipo: "entrada"
+                    });
+                }
+            }
+            return alertas;
+        }
+
+        function colorSemilla(valor) {
+            if (valor > 5) return 'fuccia';
+            if (valor >= 2) return 'violet';
+            return 'azul';
+        }
+
+        function resultadoFormula(valor) {
+            if (valor === "" || valor === null || isNaN(valor)) return "";
+            return valor < 2 ? -1 : 1;
+        }
+
+        function acumuladoResultados() {
+            let acumulado = 0;
+            let arr = [];
+            for (let v of datos) {
+                let r = resultadoFormula(v);
+                acumulado += (typeof r === "number" ? r : 0);
+                arr.push(acumulado);
+            }
+            return arr;
+        }
+
+        function calcularEstadisticas() {
+            if (datos.length === 0) return {
+                rondas: 0,
+                promedio: 0,
+                menos2: 0,
+                masIgual2: 0,
+                ultimos: [],
+                prediccion: "Sin datos suficientes",
+                predCoef: "Sin datos suficientes"
+            };
+            let suma = 0, menos2 = 0, masIgual2 = 0;
+            let ultimos = datos.slice(-5);
+            datos.forEach(v => {
+                suma += v;
+                if (v < 2) menos2++;
+                else masIgual2++;
+            });
+            let pred = prediccionProximaRonda();
+            let predCoef = predecirCoeficiente(datos, 7);
+            let predTxt = pred === null ? "Sin datos suficientes" : `${pred.toFixed(2)}`;
+            let predCoefTxt = predCoef === null ? "Sin datos suficientes" : `${predCoef.toFixed(2)}`;
+            return {
+                rondas: datos.length,
+                promedio: (suma / datos.length).toFixed(2),
+                menos2,
+                masIgual2,
+                ultimos,
+                prediccion: predTxt,
+                predCoef: predCoefTxt
+            };
+        }
+
+        function mostrarEstadisticas() {
+            const est = calcularEstadisticas();
+            document.getElementById('estadisticas').innerHTML = `
+                <b>Estadísticas:</b><br>
+                Rondas: ${est.rondas}<br>
+                Promedio: ${est.promedio}<br>
+                Menores a 2: ${est.menos2}<br>
+                Mayores o iguales a 2: ${est.masIgual2}<br>
+                Últimos 5 valores: ${est.ultimos.join(', ')}<br>
+                <span class="prediccion">Predicción próximo coeficiente: ${est.predCoef}</span><br>
+                <span class="prediccion">Predicción próxima ronda (acumulado): ${est.prediccion}</span>
+            `;
+        }
+
+        function mostrarAlertas(alertas) {
+            const alertasDiv = document.getElementById('alertas');
+            alertasDiv.innerHTML = '';
+            alertas.forEach(a => {
+                const div = document.createElement('div');
+                div.className = 'alerta-tarjeta ' + (a.tipo === "caida" ? 'alerta-caida' : 'alerta-entrada');
+                div.textContent = a.mensaje;
+                alertasDiv.appendChild(div);
+            });
+        }
+
+        function actualizarAciertosPerdidas() {
+            let aciertos = 0, perdidas = 0, totalPred = 0;
+            // Efectividad: compara la predicción anterior con el valor real ingresado
+            for (let i = 1; i < datos.length; i++) {
+                let pred = predecirCoeficiente(datos.slice(0, i), 7);
+                if (pred !== null) {
+                    let real = datos[i];
+                    let predRes = resultadoFormula(pred);
+                    let realRes = resultadoFormula(real);
+                    if (predRes === 1 && realRes === 1) aciertos++;
+                    if (predRes === -1 && realRes === -1) aciertos++;
+                    if (predRes !== realRes) perdidas++;
+                    totalPred++;
+                }
+            }
+            let efectividad = totalPred > 0 ? ((aciertos / totalPred) * 100).toFixed(2) : "0.00";
+            document.getElementById('aciertos').textContent = aciertos;
+            document.getElementById('perdidas').textContent = perdidas;
+            document.getElementById('efectividad').textContent = `Efectividad: ${efectividad}%`;
+        }
+
+        function actualizarSemillas() {
+            const semillasDiv = document.getElementById('semillas-container');
+            semillasDiv.innerHTML = '';
+            const start = Math.max(0, datos.length - 50);
+            const datosMostrar = datos.slice(start);
+            // Mostrar de derecha a izquierda
+            for (let idx = datosMostrar.length - 1; idx >= 0; idx--) {
+                let valor = datosMostrar[idx];
+                const semilla = document.createElement('div');
+                semilla.className = 'semilla ' + colorSemilla(valor);
+
+                const valorSpan = document.createElement('span');
+                valorSpan.textContent = valor;
+                semilla.appendChild(valorSpan);
+
+                const res = document.createElement('span');
+                res.className = 'resultado';
+                res.textContent = resultadoFormula(valor);
+                semilla.appendChild(res);
+
+                const cerrar = document.createElement('span');
+                cerrar.className = 'cerrar';
+                cerrar.textContent = '×';
+                cerrar.title = 'Borrar este valor';
+                cerrar.onclick = function(e) {
+                    e.stopPropagation();
+                    datos.splice(start + idx, 1);
+                    actualizarSemillas();
+                    actualizarGrafico(true);
+                    mostrarEstadisticas();
+                    actualizarAciertosPerdidas();
+                    document.getElementById('valor').value = '';
+                    document.getElementById('valor').focus();
+                };
+                semilla.appendChild(cerrar);
+
+                semillasDiv.appendChild(semilla);
+            }
+        }
+
+        function actualizarGrafico(scrollToEnd = false) {
+            const ctx = document.getElementById('grafico').getContext('2d');
+            if (chart) chart.destroy();
+            const labels = datos.length ? datos.map((_, i) => i + 1) : [1,2,3,4,5];
+            const acumulado = datos.length ? acumuladoResultados() : [0,0,0,0,0];
+            const ema = datos.length ? calcularEMA(acumulado, 10) : [];
+            const rsi = datos.length ? calcularRSI(acumulado, 14) : [];
+
+            // Entradas por cruce de niveles
+            const niveles = [1.5, 1.7, 2, 3];
+            const entradas = detectarEntradas(acumulado, niveles);
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Acumulado',
+                            data: acumulado,
+                            borderColor: function(context) {
+                                return '#43a047';
+                            },
+                            backgroundColor: 'rgba(76,175,80,0.13)',
+                            fill: true,
+                            tension: 0,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#43a047',
+                            pointBorderWidth: 2,
+                            pointBorderColor: '#fff',
+                            yAxisID: 'acum',
+                            segment: {
+                                borderColor: ctx => {
+                                    const i = ctx.p0DataIndex;
+                                    if (acumulado[i] < 2) return '#e53935';
+                                    return '#43a047';
+                                }
+                            }
+                        },
+                        {
+                            label: 'EMA 10',
+                            data: ema,
+                            borderColor: '#ff9800',
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0,
+                            yAxisID: 'acum'
+                        },
+                        {
+                            label: 'Entradas',
+                            data: labels.map((_, i) => {
+                                const entrada = entradas.find(e => e.ronda === i + 1 && e.tipo === "sube");
+                                return entrada ? acumulado[i] : null;
+                            }),
+                            borderColor: 'transparent',
+                            backgroundColor: '#e53935',
+                            pointRadius: 8,
+                            pointStyle: 'triangle',
+                            type: 'scatter',
+                            showLine: false,
+                            yAxisID: 'acum'
+                        },
+                        {
+                            label: 'Salidas',
+                            data: labels.map((_, i) => {
+                                const salida = entradas.find(e => e.ronda === i + 1 && e.tipo === "baja");
+                                return salida ? acumulado[i] : null;
+                            }),
+                            borderColor: 'transparent',
+                            backgroundColor: '#1976d2',
+                            pointRadius: 8,
+                            pointStyle: 'rectRot',
+                            type: 'scatter',
+                            showLine: false,
+                            yAxisID: 'acum'
+                        },
+                        {
+                            label: 'RSI 14',
+                            data: rsi,
+                            borderColor: '#1976d2',
+                            backgroundColor: 'rgba(25,118,210,0.07)',
+                            fill: true,
+                            tension: 0,
+                            pointRadius: 2,
+                            pointBackgroundColor: '#1976d2',
+                            pointBorderWidth: 1,
+                            pointBorderColor: '#fff',
+                            yAxisID: 'rsi'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.label === 'RSI 14') {
+                                        return `RSI: ${context.parsed.y ? context.parsed.y.toFixed(2) : ''}`;
+                                    }
+                                    if (context.dataset.label === 'EMA 10') {
+                                        return `EMA: ${context.parsed.y ? context.parsed.y.toFixed(2) : ''}`;
+                                    }
+                                    if (context.dataset.label === 'Entradas') {
+                                        return 'Cruce ascendente';
+                                    }
+                                    if (context.dataset.label === 'Salidas') {
+                                        return 'Cruce descendente';
+                                    }
+                                    return `Acumulado: ${context.parsed.y}`;
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                onPan: function() { autoScroll = false; }
+                            },
+                            zoom: {
+                                wheel: { enabled: true },
+                                pinch: { enabled: true },
+                                mode: 'x',
+                                drag: { enabled: true },
+                                onZoom: function() { autoScroll = false; }
+                            },
+                            limits: {
+                                x: { min: 0 }
+                            }
+                        }
+                    },
+                    scales: {
+                        acum: {
+                            type: 'linear',
+                            position: 'left',
+                            title: { display: true, text: 'Acumulado', color: '#43a047' },
+                            grid: { color: '#eee' },
+                            min: Math.min(...acumulado) - 1,
+                            max: Math.max(...acumulado) + 1,
+                            weight: 3,
+                            offset: false,
+                            stack: 'main'
+                        },
+                        rsi: {
+                            type: 'linear',
+                            position: 'right',
+                            title: { display: true, text: 'RSI', color: '#1976d2' },
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: true,
+                                color: (ctx) => ctx.tick.value === 30 || ctx.tick.value === 70 ? "#ff9800" : "#eee",
+                                lineWidth: (ctx) => ctx.tick.value === 30 || ctx.tick.value === 70 ? 2 : 1
+                            },
+                            ticks: { color: '#1976d2' },
+                            weight: 1,
+                            offset: true,
+                            stack: 'rsi'
+                        }
+                    }
+                }
+            });
+        }
+
+        function agregarDato() {
+            const v = parseFloat(document.getElementById('valor').value);
+            if (isNaN(v)) {
+                alert('Por favor, ingresa un valor.');
+                return;
+            }
+            datos.push(v);
+            actualizarSemillas();
+            autoScroll = true;
+            actualizarGrafico(true);
+            mostrarEstadisticas();
+            actualizarAciertosPerdidas();
+
+            let alertas = alertasPrediccion();
+
+            mostrarAlertas(alertas);
+
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+
+        function borrarSemilla() {
+            if (datos.length > 0) {
+                datos.pop();
+                actualizarSemillas();
+                actualizarGrafico(true);
+                mostrarEstadisticas();
+                actualizarAciertosPerdidas();
+            }
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+            mostrarAlertas([]);
+        }
+
+        document.getElementById('valor').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                agregarDato();
+            }
+            if ((event.key === 'Backspace' || event.key === 'Delete') && this.value === '') {
+                borrarSemilla();
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const input = document.getElementById('valor');
+            if ((event.key === 'Backspace' || event.key === 'Delete') && document.activeElement !== input) {
+                borrarSemilla();
+                event.preventDefault();
+            }
+        });
+
+        // Inicializar
+        actualizarSemillas();
+        actualizarGrafico();
+        mostrarEstadisticas();
+        actualizarAciertosPerdidas();
+    </script>
+</body>
+</html>
