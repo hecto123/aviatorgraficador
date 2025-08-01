@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cascada tipo Aviator Gamer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+        .inputs {
+            margin: 30px auto 10px auto;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .inputs input, .inputs .ronda-input {
+            width: 120px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            background: #232946;
+            color: #00ffe7;
+            font-size: 1em;
+            font-weight: bold;
+            outline: none;
+            box-shadow: 0 0 0 2px #00ffe733;
+            transition: box-shadow 0.2s;
+            margin-right: 4px;
+        }
+        .inputs input:focus, .inputs .ronda-input:focus {
+            box-shadow: 0 0 0 3px #00ffe7cc;
+        }
+        .inputs button {
+            background: linear-gradient(90deg, #00ffe7 0%, #1de9b6 100%);
+            color: #181c2f;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 22px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 12px #00ffe733;
+            transition: background 0.2s, color 0.2s;
+        }
+        .inputs button:hover {
+            background: linear-gradient(90deg, #1de9b6 0%, #00ffe7 100%);
+            color: #fff;
+        }
+        #ronda-info {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 18px;
+            margin: 10px auto 0 auto;
+            max-width: 700px;
+            background: #232946;
+            border-radius: 12px;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            color: #fff;
+            box-shadow: 0 2px 12px #00ffe733;
+            font-weight: bold;
+        }
+        #semillas-container {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-items: flex-end;
+            justify-content: flex-start;
+            margin: 20px auto 20px auto;
+            min-height: 70px;
+            max-width: 98vw;
+            background: #181c2f;
+            border-radius: 14px;
+            padding: 10px 0 10px 0;
+            box-shadow: 0 2px 16px #00ffe733;
+            gap: 8px;
+            overflow-x: auto;
+        }
+        .semilla {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 54px;
+            height: 54px;
+            margin: 0 2px;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.3em;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            font-weight: bold;
+            box-shadow: 0 0 12px #00ffe733;
+            transition: background 0.2s, box-shadow 0.2s;
+            position: relative;
+            border: 2px solid #232946;
+            image-rendering: pixelated;
+        }
+        .semilla.azul { background: linear-gradient(135deg, #232946 60%, #00bfff 100%); }
+        .semilla.violeta { background: linear-gradient(135deg, #232946 60%, #a259f7 100%); }
+        .semilla.fuccia { background: linear-gradient(135deg, #232946 60%, #ff00cc 100%); }
+        .cerrar {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #232946;
+            color: #ff1744;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 18px;
+            line-height: 22px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid #ff1744;
+            font-weight: bold;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #grafico-container {
+            width: 100vw;
+            max-width: 1400px;
+            margin: 30px auto 0 auto;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px #00ffe733;
+            padding: 10px 0 30px 0;
+            position: relative;
+            background: #181c2f;
+        }
+        #grafico {
+            width: 100% !important;
+            height: 700px !important;
+            min-height: 400px !important;
+            max-height: 900px !important;
+            display: block;
+            border-radius: 12px;
+            background: transparent;
+        }
+        #alertas {
+            max-width: 700px;
+            margin: 20px auto 0 auto;
+            padding: 10px;
+            text-align: center;
+        }
+        .alerta-tendencia {
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 10px;
+            padding: 10px 20px;
+            margin: 10px auto;
+            display: inline-block;
+        }
+        .alcista {
+            background: #00ff6a;
+            color: #181c2f;
+            border: 2px solid #00bfff;
+        }
+        .bajista {
+            background: #ff1744;
+            color: #fff;
+            border: 2px solid #ff00cc;
+        }
+        #aprox-op {
+            max-width: 700px;
+            margin: 20px auto 0 auto;
+            background: #232946;
+            color: #fff;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.1em;
+            box-shadow: 0 2px 12px #00ffe733;
+            text-align: left;
+        }
+        #acumulado-box {
+            max-width: 700px;
+            margin: 20px auto 0 auto;
+            background: #181c2f;
+            color: #00ffe7;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.2em;
+            box-shadow: 0 2px 12px #00ffe733;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        #historial-box {
+            max-width: 900px;
+            margin: 20px auto 0 auto;
+            background: #232946;
+            color: #fff;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1em;
+            box-shadow: 0 2px 12px #00ffe733;
+            text-align: left;
+        }
+        #estadisticas-box {
+            max-width: 400px;
+            margin: 24px auto 0 auto;
+            background: #181c2f;
+            color: #00ffe7;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.1em;
+            box-shadow: 0 2px 12px #00ffe733;
+            text-align: center;
+        }
+        #estadisticas-avanzadas-box {
+            max-width: 700px;
+            margin: 24px auto 0 auto;
+            background: #232946;
+            color: #00ffe7;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.1em;
+            box-shadow: 0 2px 12px #00ffe733;
+            text-align: center;
+        }
+        .historial-scroll {
+            max-height: 320px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #232946;
+            margin-top: 8px;
+        }
+        .historial-table {
+            width: 100%;
+            color: #fff;
+            border-collapse: collapse;
+            min-width: 320px;
+        }
+        .historial-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #232946;
+        }
+        .historial-table th, .historial-table td {
+            padding: 6px 8px;
+            text-align: center;
+        }
+        .historial-table th {
+            font-weight: bold;
+            background: #232946;
+        }
+        .historial-table tr {
+            border-bottom: 1px solid #232946;
+        }
+        #alerta-posible {
+            max-width: 700px;
+            margin: 20px auto 0 auto;
+            background: #ffefc2;
+            color: #ff1744;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.2em;
+            box-shadow: 0 2px 12px #ff1744aa;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid #ff1744;
+        }
+    </style>
+</head>
+<body>
+    <div id="ronda-info">
+        <span>Ronda: <input class="ronda-input" id="ronda-num" type="text" value="8138575"></span>
+        <span>Valor: <input class="ronda-input" id="ronda-valor" type="number" step="any" value="1.67"></span>
+        <span>Hora: <input class="ronda-input" id="ronda-hora" type="text" value="00:44:00"></span>
+        <button onclick="reiniciarTodo()" style="background:#ff1744;color:#fff;">Reiniciar</button>
+    </div>
+    <div class="inputs">
+        <input type="number" id="valor" placeholder="Valor de ronda" step="any">
+        <button onclick="agregarDato()" id="agregar-btn">Agregar</button>
+        <button onclick="borrarSemilla()">Borrar último</button>
+        <button onclick="descargarExcel()">Descargar Excel</button>
+        <button onclick="borrarTodo()" style="background:#ff1744;color:#fff;">Borrar historial</button>
+    </div>
+    <div id="semillas-container"></div>
+    <div id="grafico-container">
+        <div id="grafico"></div>
+    </div>
+    <div id="estadisticas-box"></div>
+    <div id="acumulado-box"></div>
+    <div id="alertas"></div>
+    <div id="aprox-op"></div>
+    <div id="alerta-posible"></div>
+    <div id="historial-box"></div>
+    <div id="estadisticas-avanzadas-box"></div>
+    <div id="reloj-container">
+        <div id="reloj-tendencia"></div>
+        <div id="reloj-actual"></div>
+        <div id="reloj-historial"></div>
+        <div id="reloj-actualizado"></div>
+    </div>
+    <script>
+
+
+        let datos = [];
+        let historial = [];
+
+        // Cargar historial de localStorage
+        if (localStorage.getItem('aviator_historial')) {
+            try {
+                historial = JSON.parse(localStorage.getItem('aviator_historial'));
+                datos = historial.map(h => h.valor);
+            } catch (e) { historial = []; datos = []; }
+        }
+
+        function guardarHistorial() {
+            localStorage.setItem('aviator_historial', JSON.stringify(historial));
+        }
+
+        function colorSemilla(valor) {
+            if (valor < 2) return 'azul';
+            if (valor >= 2 && valor < 6) return 'violeta';
+            return 'fuccia';
+        }
+
+        function actualizarSemillas() {
+            while (datos.length > 20) {
+                datos.shift();
+                // historial.shift(); // NO BORRAR HISTORIAL
+            }
+            guardarHistorial();
+
+            const semillasDiv = document.getElementById('semillas-container');
+            semillasDiv.innerHTML = '';
+
+            // Solo muestra las últimas 20 semillas en pantalla
+            let semillasAMostrar = datos.slice(-20);
+            semillasAMostrar.forEach((valor, idx) => {
+                const semilla = document.createElement('div');
+                semilla.className = 'semilla ' + colorSemilla(valor);
+                semilla.textContent = valor;
+                const cerrar = document.createElement('span');
+                cerrar.className = 'cerrar';
+                cerrar.textContent = '×';
+                cerrar.title = 'Borrar este valor';
+                cerrar.onclick = function(e) {
+                    e.stopPropagation();
+                    let indexReal = datos.length - semillasAMostrar.length + idx;
+                    datos.splice(indexReal, 1);
+                    historial.splice(indexReal, 1);
+                    actualizarSemillas();
+                    actualizarGrafico();
+                    mostrarTendencia();
+                    mostrarAproximacion();
+                    mostrarAcumulado();
+                    mostrarHistorial();
+                    mostrarAlertaPosible();
+                    mostrarEstadisticas();
+                    document.getElementById('valor').value = '';
+                    document.getElementById('valor').focus();
+                };
+                semilla.appendChild(cerrar);
+                semillasDiv.appendChild(semilla);
+            });
+        }
+
+        function mostrarEstadisticas() {
+            const box = document.getElementById('estadisticas-box');
+            // Buscar la última vez que cayó un valor < 2
+            let ultimaIdx = -1;
+            for (let i = historial.length - 1; i >= 0; i--) {
+                if (historial[i].valor < 2) {
+                    ultimaIdx = i;
+                    break;
+                }
+            }
+            let veces = 0;
+            let tiempo = 'N/A';
+            if (ultimaIdx !== -1) {
+                veces = historial.length - ultimaIdx - 1;
+                // Calcular tiempo transcurrido
+                let ahora = new Date();
+                let horaUltima = historial[ultimaIdx].hora;
+                let partes = horaUltima.split(':');
+                let fechaUltima = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), ...partes.map(Number));
+                if (fechaUltima > ahora) fechaUltima.setDate(fechaUltima.getDate() - 1); // Si es de ayer
+                let ms = ahora - fechaUltima;
+                let minutos = Math.floor(ms / 60000);
+                let segundos = Math.floor((ms % 60000) / 1000);
+                tiempo = `${minutos} min ${segundos} seg`;
+            }
+            box.innerHTML = `
+                <b>Desde la última vez que cayó &lt; 2:</b><br>
+                <span style="font-size:1.5em;color:#ff1744;">${veces}</span> rondas<br>
+                <span style="font-size:1.2em;">${tiempo}</span>
+            `;
+        }
+
+        function mostrarEstadisticasAvanzadas() {
+            const box = document.getElementById('estadisticas-avanzadas-box');
+            if (historial.length === 0) {
+                box.innerHTML = '';
+                return;
+            }
+            // Promedio últimos 10 y total
+            let ultimos10 = historial.slice(-10).map(h => h.valor);
+            let promedio10 = ultimos10.length ? (ultimos10.reduce((a,b)=>a+b,0)/ultimos10.length).toFixed(2) : 'N/A';
+            let promedioTotal = (historial.reduce((a,b)=>a+b.valor,0)/historial.length).toFixed(2);
+
+            // Máximo y mínimo
+            let max = Math.max(...historial.map(h=>h.valor));
+            let min = Math.min(...historial.map(h=>h.valor));
+
+            // Porcentajes
+            let bajo = historial.filter(h=>h.valor<2).length;
+            let medio = historial.filter(h=>h.valor>=2 && h.valor<6).length;
+            let alto = historial.filter(h=>h.valor>=6).length;
+            let total = historial.length;
+            let pbajo = ((bajo/total)*100).toFixed(1);
+            let pmedio = ((medio/total)*100).toFixed(1);
+            let palto = ((alto/total)*100).toFixed(1);
+
+            box.innerHTML = `
+            <div style="background:#232946;color:#fff;padding:18px 24px;border-radius:12px;max-width:700px;margin:24px auto 0 auto;box-shadow:0 2px 12px #00ffe733;text-align:center;font-size:1.1em;">
+                <b>Estadísticas avanzadas</b><br>
+                Promedio últimos 10: <b style="color:#00ffe7">${promedio10}</b> &nbsp;|&nbsp;
+                Promedio total: <b style="color:#00ffe7">${promedioTotal}</b><br>
+                Máximo: <b style="color:#ffb300">${max}</b> &nbsp;|&nbsp;
+                Mínimo: <b style="color:#ff1744">${min}</b><br>
+                <span style="color:#00bfff;">&lt;2:</span> ${bajo} (${pbajo}%) &nbsp; 
+                <span style="color:#a259f7;">2-6:</span> ${medio} (${pmedio}%) &nbsp; 
+                <span style="color:#ff00cc;">&gt;=6:</span> ${alto} (${palto}%)
+            </div>
+            `;
+        }
+
+        function detectarTendencia() {
+            if (datos.length < 5) return 'neutral';
+            let ultimos = datos.slice(-5);
+            let suma = 0;
+            for (let i = 1; i < ultimos.length; i++) {
+                suma += ultimos[i] - ultimos[i-1];
+            }
+            if (suma > 1) return 'alcista';
+            if (suma < -1) return 'bajista';
+            return 'neutral';
+        }
+
+        function mostrarTendencia() {
+            const alertasDiv = document.getElementById('alertas');
+            let tendencia = detectarTendencia();
+            if (tendencia === 'alcista') {
+                alertasDiv.innerHTML = '<span class="alerta-tendencia alcista">¡Tendencia alcista detectada!</span>';
+            } else if (tendencia === 'bajista') {
+                alertasDiv.innerHTML = '<span class="alerta-tendencia bajista">¡Tendencia bajista detectada!</span>';
+            } else {
+                alertasDiv.innerHTML = '';
+            }
+        }
+
+        function mostrarAproximacion() {
+            const aproxDiv = document.getElementById('aprox-op');
+            if (datos.length < 4) {
+                aproxDiv.innerHTML = '';
+                return;
+            }
+            let patrones = {};
+            let maxPatron = '';
+            let maxCount = 1;
+            for (let len = 2; len <= 3; len++) {
+                for (let i = 0; i <= datos.length - len; i++) {
+                    let patron = datos.slice(i, i + len).join(',');
+                    patrones[patron] = (patrones[patron] || 0) + 1;
+                    if (patrones[patron] > maxCount) {
+                        maxCount = patrones[patron];
+                        maxPatron = patron;
+                    }
+                }
+            }
+            if (maxCount > 1) {
+                let prox = maxPatron.split(',').map(Number);
+                let posible = prox[prox.length-1];
+                let tipo = '';
+                if (posible < 2) tipo = 'BAJA';
+                else if (posible >= 2 && posible < 6) tipo = 'MEDIA';
+                else tipo = 'ALTA';
+                aproxDiv.innerHTML = `<b>Patrón frecuente:</b> [${maxPatron}] (${maxCount} veces)<br>
+                <b>Próxima semilla probable:</b> <span style="color:#00ffe7">${posible}</span> (<b>${tipo}</b>)
+                <br><span style="color:#ff1744;font-weight:bold;">⚡ ¡Alerta de aproximación de resultado!</span>`;
+            } else {
+                aproxDiv.innerHTML = '<span style="color:#888;">Sin patrón de repetición detectado.</span>';
+            }
+        }
+
+        function mostrarAcumulado() {
+            let acumulado = 0;
+            for (let i = 0; i < datos.length; i++) {
+                let valor = datos[i];
+                let resultado = valor < 2 ? -1 : 1;
+                acumulado += resultado;
+            }
+            document.getElementById('acumulado-box').innerHTML =
+                `<span>Acumulado actual: <b style="color:#00ffe7">${acumulado}</b></span>`;
+        }
+
+        function mostrarHistorial() {
+            const box = document.getElementById('historial-box');
+            if (historial.length === 0) {
+                box.innerHTML = '<b>Historial vacío.</b>';
+                return;
+            }
+            // Mostrar todos los datos guardados, con scroll y cabecera fija
+            let html = `
+                <b>Historial de rondas:</b>
+                <div class="historial-scroll">
+                <table class="historial-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Valor</th>
+                            <th>Hora</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            historial.forEach((item, idx) => {
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${item.valor}</td>
+                        <td>${item.hora}</td>
+                    </tr>
+                `;
+            });
+            html += `
+                    </tbody>
+                </table>
+                </div>
+            `;
+            box.innerHTML = html;
+        }
+
+        function mostrarAlertaPosible() {
+            // Ya incluida en mostrarAproximacion con alerta visual
+        }
+
+        // EMA y RSI helpers
+        function calcularEMA(arr, n) {
+            let ema = [];
+            let k = 2 / (n + 1);
+            let prev = arr[0] || 0;
+            ema.push(prev);
+            for (let i = 1; i < arr.length; i++) {
+                let val = arr[i] * k + prev * (1 - k);
+                ema.push(val);
+                prev = val;
+            }
+            return ema;
+        }
+
+        function calcularRSI(arr, n) {
+            let rsi = [];
+            if (arr.length < n + 1) {
+                for (let i = 0; i < arr.length; i++) rsi.push(null);
+                return rsi;
+            }
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= n; i++) {
+                let diff = arr[i] - arr[i - 1];
+                if (diff >= 0) gains += diff;
+                else losses -= diff;
+            }
+            gains /= n;
+            losses /= n;
+            let rs = losses === 0 ? 100 : gains / losses;
+            rsi[n] = 100 - (100 / (1 + rs));
+            for (let i = n + 1; i < arr.length; i++) {
+                let diff = arr[i] - arr[i - 1];
+                let gain = diff > 0 ? diff : 0;
+                let loss = diff < 0 ? -diff : 0;
+                gains = (gains * (n - 1) + gain) / n;
+                losses = (losses * (n - 1) + loss) / n;
+                rs = losses === 0 ? 100 : gains / losses;
+                rsi[i] = 100 - (100 / (1 + rs));
+            }
+            for (let i = 0; i < n; i++) rsi[i] = null;
+            return rsi;
+        }
+
+        function actualizarGrafico() {
+            let acumulado = 0;
+            let x = [];
+            let y = [];
+            let colors = [];
+            for (let i = 0; i < datos.length; i++) {
+                let valor = datos[i];
+                let resultado = valor < 2 ? -1 : 1;
+                acumulado += resultado;
+                x.push(i + 1);
+                y.push(acumulado);
+                if (valor < 2) colors.push('#00bfff');
+                else if (valor >= 2 && valor < 6) colors.push('#a259f7');
+                else colors.push('#ff00cc');
+            }
+            if (x.length === 0) {
+                x = [1,2,3,4,5];
+                y = [0,0,0,0,0];
+                colors = ['#00bfff','#00bfff','#00bfff','#00bfff','#00bfff'];
+            }
+
+            // EMAs y RSI
+            let ema10 = calcularEMA(y, 10);
+            let ema20 = calcularEMA(y, 20);
+            let rsi14 = calcularRSI(y, 14);
+
+            // Segmentos de color
+            let segments = [];
+            if (x.length > 1) {
+                let segStart = 0;
+                let currentColor = colors[0];
+                for (let i = 1; i < x.length; i++) {
+                    if (colors[i] !== currentColor) {
+                        segments.push({
+                            x: x.slice(segStart, i + 1),
+                            y: y.slice(segStart, i + 1),
+                            line: {color: currentColor, width: 4},
+                            marker: {color: currentColor, size: 10},
+                            mode: 'lines+markers',
+                            type: 'scatter',
+                            showlegend: false,
+                            text: datos.slice(segStart, i + 1).map(v => `Semilla: ${v}`),
+                            hoverinfo: 'text+y'
+                        });
+                        segStart = i;
+                        currentColor = colors[i];
+                    }
+                }
+                segments.push({
+                    x: x.slice(segStart),
+                    y: y.slice(segStart),
+                    line: {color: currentColor, width: 4},
+                    marker: {color: currentColor, size: 10},
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    showlegend: false,
+                    text: datos.slice(segStart).map(v => `Semilla: ${v}`),
+                    hoverinfo: 'text+y'
+                });
+            } else {
+                segments.push({
+                    x: x,
+                    y: y,
+                    line: {color: colors[0], width: 4},
+                    marker: {color: colors[0], size: 10},
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    showlegend: false,
+                    text: datos.map(v => `Semilla: ${v}`),
+                    hoverinfo: 'text+y'
+                });
+            }
+
+            // EMAs
+            segments.push({
+                x: x,
+                y: ema10,
+                line: {color: '#00ffe7', width: 2, dash: 'dot'},
+                mode: 'lines',
+                name: 'EMA 10',
+                type: 'scatter',
+                hoverinfo: 'skip'
+            });
+            segments.push({
+                x: x,
+                y: ema20,
+                line: {color: '#ffb300', width: 2, dash: 'dash'},
+                mode: 'lines',
+                name: 'EMA 20',
+                type: 'scatter',
+                hoverinfo: 'skip'
+            });
+
+            // RSI (en eje secundario)
+            segments.push({
+                x: x,
+                y: rsi14,
+                yaxis: 'y2',
+                line: {color: '#00ff6a', width: 2},
+                mode: 'lines',
+                name: 'RSI 14',
+                type: 'scatter',
+                hoverinfo: 'skip'
+            });
+
+            // Líneas de soporte y resistencia y anotaciones
+            let soporte = Math.min(...y);
+            let resistencia = Math.max(...y);
+
+            // Índices donde se alcanza soporte y resistencia por primera vez
+            let idxSoporte = y.indexOf(soporte);
+            let idxResistencia = y.indexOf(resistencia);
+
+            // Valor de la semilla que causó el soporte/resistencia
+            let valorSoporte = idxSoporte > -1 ? datos[idxSoporte] : '';
+            let valorResistencia = idxResistencia > -1 ? datos[idxResistencia] : '';
+
+            // Calcula los 2 soportes y 2 resistencias móviles (mínimos y máximos únicos)
+            let sortedY = [...new Set(y)].sort((a, b) => a - b);
+            let soportes = sortedY.slice(0, 2);
+            let resistencias = sortedY.slice(-2);
+
+            let layout = {
+                title: 'Cascada Acumulada',
+                plot_bgcolor: '#181c2f',
+                paper_bgcolor: '#181c2f',
+                font: {color: '#00ffe7'},
+                xaxis: {
+                    title: 'Ronda',
+                    gridcolor: '#232946'
+                },
+                yaxis: {title: 'Acumulado', gridcolor: '#232946'},
+                yaxis2: {
+                    title: 'RSI',
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, 100],
+                    showgrid: false,
+                    tickfont: {color: '#00ff6a'},
+                    titlefont: {color: '#00ff6a'}
+                },
+                height: 700,
+                margin: {l: 60, r: 60, t: 60, b: 60},
+                legend: {orientation: "h", y: -0.2},
+                shapes: [
+                    // Soportes
+                    {
+                        type: 'line',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: x[0],
+                        y0: soportes[0],
+                        x1: x[x.length-1],
+                        y1: soportes[0],
+                        line: { color: '#00bfff', width: 3, dash: 'dot' }
+                    },
+                    {
+                        type: 'line',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: x[0],
+                        y0: soportes[1],
+                        x1: x[x.length-1],
+                        y1: soportes[1],
+                        line: { color: '#00bfff88', width: 2, dash: 'dash' }
+                    },
+                    // Resistencias
+                    {
+                        type: 'line',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: x[0],
+                        y0: resistencias[0],
+                        x1: x[x.length-1],
+                        y1: resistencias[0],
+                        line: { color: '#ff00cc88', width: 2, dash: 'dash' }
+                    },
+                    {
+                        type: 'line',
+                        xref: 'x',
+                        yref: 'y',
+                        x0: x[0],
+                        y0: resistencias[1],
+                        x1: x[x.length-1],
+                        y1: resistencias[1],
+                        line: { color: '#ff00cc', width: 3, dash: 'dot' }
+                    }
+                ],
+                annotations: [] // No mostrar texto fijo, solo tooltip al pasar el mouse
+            };
+            Plotly.newPlot('grafico', segments, layout, {responsive: true});
+
+            // Detectar ruptura de soporte o resistencia
+            let alertaRuptura = '';
+            if (y.length > 1 && soportes.length > 0 && resistencias.length > 1) {
+                let ultimo = y[y.length - 1];
+                let penultimo = y[y.length - 2];
+                // Ruptura de soporte (baja por debajo del soporte más bajo)
+                if (penultimo >= soportes[0] && ultimo < soportes[0]) {
+                    alertaRuptura = '⚠️ ¡Ruptura de SOPORTE!';
+                }
+                // Ruptura de resistencia (sube por encima de la resistencia más alta)
+                if (penultimo <= resistencias[1] && ultimo > resistencias[1]) {
+                    alertaRuptura = '⚡ ¡Ruptura de RESISTENCIA!';
+                }
+            }
+
+            // Mostrar alerta visual si hay ruptura
+            const alertasDiv = document.getElementById('alertas');
+            if (alertaRuptura) {
+                alertasDiv.innerHTML = `<span class="alerta-tendencia" style="background:#ffefc2;color:#ff1744;border:2px solid #ff1744;">${alertaRuptura}</span>`;
+            } else {
+                mostrarTendencia();
+            }
+        }
+
+        function agregarDato() {
+            const v = parseFloat(document.getElementById('valor').value);
+            if (isNaN(v)) {
+                alert('Por favor, ingresa un valor.');
+                return;
+            }
+            datos.push(v);
+            let ahora = new Date();
+            let hora = ahora.toLocaleTimeString('es-CO', {hour12:false});
+            historial.push({valor: v, hora: hora});
+            actualizarSemillas();
+            actualizarGrafico();
+            mostrarTendencia();
+            mostrarAproximacion();
+            mostrarAcumulado();
+            mostrarHistorial();
+            mostrarAlertaPosible();
+            mostrarEstadisticas();
+            mostrarEstadisticasAvanzadas();
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+
+        function borrarSemilla() {
+            if (datos.length > 0) {
+                datos.pop();
+                historial.pop();
+                actualizarSemillas();
+                actualizarGrafico();
+                mostrarTendencia();
+                mostrarAproximacion();
+                mostrarAcumulado();
+                mostrarHistorial();
+                mostrarAlertaPosible();
+                mostrarEstadisticas();
+                mostrarEstadisticasAvanzadas();
+            }
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+
+        function borrarTodo() {
+            if (!confirm("¿Seguro que deseas borrar TODO el historial? Esta acción no se puede deshacer.")) return;
+            datos = [];
+            historial = [];
+            guardarHistorial();
+            actualizarSemillas();
+            actualizarGrafico();
+            mostrarTendencia();
+            mostrarAproximacion();
+            mostrarAcumulado();
+            mostrarHistorial();
+            mostrarAlertaPosible();
+            mostrarEstadisticas();
+            mostrarEstadisticasAvanzadas();
+        }
+
+        function reiniciarTodo() {
+            document.getElementById('ronda-num').value = '';
+            document.getElementById('ronda-valor').value = '';
+            document.getElementById('ronda-hora').value = '';
+            borrarTodo();
+        }
+
+        function descargarExcel() {
+            if (historial.length === 0) {
+                alert("No hay datos para exportar.");
+                return;
+            }
+            let csv = "Ronda,Valor,Hora\n";
+            historial.forEach((item, idx) => {
+                csv += (idx+1) + "," + item.valor + "," + item.hora + "\n";
+            });
+            let blob = new Blob([csv], {type: "text/csv"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "historial_aviator.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('valor').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                agregarDato();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            const input = document.getElementById('valor');
+            if ((event.key === 'Backspace' || event.key === 'Delete') &&
+                (document.activeElement !== input || input.value === '')) {
+                borrarSemilla();
+                event.preventDefault();
+            }
+        });
+
+        // NUEVO: Responsive para móviles (ajuste de fuente y padding)
+        window.addEventListener('resize', function() {
+            let w = window.innerWidth;
+            document.body.style.fontSize = w < 600 ? '0.95em' : '1em';
+            document.querySelectorAll('.inputs, #ronda-info, #estadisticas-avanzadas-box, #estadisticas-box, #acumulado-box, #aprox-op, #alertas, #historial-box').forEach(el=>{
+                if (w < 600) el.style.padding = '10px 6px';
+                else el.style.padding = '';
+            });
+        });
+
+        // Llamar también las nuevas funciones al cargar y al agregar/borrar
+        function agregarDato() {
+            const v = parseFloat(document.getElementById('valor').value);
+            if (isNaN(v)) {
+                alert('Por favor, ingresa un valor.');
+                return;
+            }
+            datos.push(v);
+            let ahora = new Date();
+            let hora = ahora.toLocaleTimeString('es-CO', {hour12:false});
+            historial.push({valor: v, hora: hora});
+            actualizarSemillas();
+            actualizarGrafico();
+            mostrarTendencia();
+            mostrarAproximacion();
+            mostrarAcumulado();
+            mostrarHistorial();
+            mostrarAlertaPosible();
+            mostrarEstadisticas();
+            mostrarEstadisticasAvanzadas();
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+        function borrarSemilla() {
+            if (datos.length > 0) {
+                datos.pop();
+                historial.pop();
+                actualizarSemillas();
+                actualizarGrafico();
+                mostrarTendencia();
+                mostrarAproximacion();
+                mostrarAcumulado();
+                mostrarHistorial();
+                mostrarAlertaPosible();
+                mostrarEstadisticas();
+                mostrarEstadisticasAvanzadas();
+            }
+            document.getElementById('valor').value = '';
+            document.getElementById('valor').focus();
+        }
+        function reiniciarTodo() {
+            document.getElementById('ronda-num').value = '';
+            document.getElementById('ronda-valor').value = '';
+            document.getElementById('ronda-hora').value = '';
+            borrarTodo();
+        }
+
+        // Llamar al cargar
+        actualizarSemillas();
+        actualizarGrafico();
+        mostrarTendencia();        let layout = {
+            title: 'Cascada Acumulada',
+            plot_bgcolor: '#181c2f',
+            paper_bgcolor: '#181c2f',
+            font: {color: '#00ffe7'},
+            xaxis: {title: 'Ronda', gridcolor: '#232946'},
+            yaxis: {title: 'Acumulado', gridcolor: '#232946'},
+            yaxis2: {
+                title: 'RSI',
+                overlaying: 'y',
+                side: 'right',
+                range: [0, 100],
+                showgrid: false,
+                tickfont: {color: '#00ff6a'},
+                titlefont: {color: '#00ff6a'}
+            },
+            height: 400, // <-- Cambia aquí el tamaño
+            margin: {l: 60, r: 60, t: 60, b: 60},
+            legend: {orientation: "h", y: -0.2},
+            shapes: [
+                // ...soportes y resistencias...
+            ],
+            annotations: []
+        };
+        mostrarAproximacion();
+        mostrarAcumulado();
+        mostrarHistorial();
+        mostrarEstadisticas();
+        mostrarEstadisticasAvanzadas();
+        mostrarAlertaPosible();
+        window.dispatchEvent(new Event('resize'));
+    </script>
+    </body>
+    </html>
