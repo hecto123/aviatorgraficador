@@ -589,6 +589,31 @@
             return rsi;
         }
 
+        // Variables globales
+        let ultimaRepetidaX = null;
+        let ultimaRepetidaValor = null;
+        let ultimaRepetidaMinutos = null;
+
+        // Detecta repetida y guarda info para el gráfico
+        function detectarRepetida(valor) {
+            const ahora = new Date();
+            let repetidaIdx = historial.findIndex(dato => dato.valor === valor);
+            if (repetidaIdx !== -1 && historial[repetidaIdx].hora) {
+                let partes = historial[repetidaIdx].hora.split(':');
+                let fechaRepetida = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), ...partes.map(Number));
+                if (fechaRepetida > ahora) fechaRepetida.setDate(fechaRepetida.getDate() - 1);
+                let ms = ahora - fechaRepetida;
+                let minutos = Math.floor(ms / 60000);
+                ultimaRepetidaX = repetidaIdx + 1;
+                ultimaRepetidaValor = valor;
+                ultimaRepetidaMinutos = minutos;
+            } else {
+                ultimaRepetidaX = null;
+                ultimaRepetidaValor = null;
+                ultimaRepetidaMinutos = null;
+            }
+        }
+
         function actualizarGrafico() {
             let acumulado = 0;
             let x = [];
@@ -769,6 +794,38 @@
                 annotations: []
             };
 
+            // Dibuja la línea horizontal amarilla y la anotación si hay repetida
+            if (ultimaRepetidaX !== null) {
+                let yValor = y[ultimaRepetidaX - 1];
+                // Línea horizontal amarilla en la cuota repetida
+                layout.shapes.push({
+                    type: 'line',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: x[0],
+                    x1: x[x.length - 1],
+                    y0: yValor,
+                    y1: yValor,
+                    line: { color: 'yellow', width: 3, dash: 'solid' }
+                });
+                // Anotación dentro del gráfico con el valor y los minutos
+                layout.annotations.push({
+                    x: ultimaRepetidaX,
+                    y: yValor,
+                    xref: 'x',
+                    yref: 'y',
+                    text: `⚠️ Semilla: <b>${ultimaRepetidaValor}</b><br>${ultimaRepetidaMinutos} min`,
+                    showarrow: true,
+                    arrowcolor: 'yellow',
+                    font: { color: 'yellow', size: 16 },
+                    bgcolor: '#232946',
+                    bordercolor: 'yellow',
+                    borderpad: 6,
+                    ax: 0,
+                    ay: -60
+                });
+            }
+
             Plotly.newPlot('grafico', segments, layout, {responsive: true});
 
             // Scroll automático al final para ver el dato más reciente
@@ -784,6 +841,7 @@
                 alert('Por favor, ingresa un valor.');
                 return;
             }
+            detectarRepetida(v); // Detecta repetida ANTES de agregar
             datos.push(v);
             let ahora = new Date();
             let hora = ahora.toLocaleTimeString('es-CO', {hour12:false});
@@ -894,6 +952,7 @@
                 alert('Por favor, ingresa un valor.');
                 return;
             }
+            detectarRepetida(v); // Detecta repetida ANTES de agregar
             datos.push(v);
             let ahora = new Date();
             let hora = ahora.toLocaleTimeString('es-CO', {hour12:false});
