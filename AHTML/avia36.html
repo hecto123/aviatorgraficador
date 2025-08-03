@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gráfico Aviator con Scroll y Trazabilidad</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    h2 {
+      text-align: center;
+      padding: 10px;
+    }
+
+    #graphWrapper {
+      width: 100%;
+      height: 300px;
+      overflow-x: auto;
+      border: 2px solid #333;
+      background: #111;
+      white-space: nowrap;
+    }
+
+    #graphCanvas {
+      background-color: #111;
+      display: inline-block;
+    }
+
+    #controls {
+      text-align: center;
+      margin: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #222;
+      color: #0f0;
+      border: 1px solid #444;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>📈 Gráfico Aviator (con scroll y trazabilidad)</h2>
+
+  <div id="controls">
+    <button onclick="addManual()">➕ Añadir dato manual</button>
+    <button onclick="clearData()">🧹 Borrar todo</button>
+  </div>
+
+  <div id="graphWrapper">
+    <canvas id="graphCanvas" width="5000" height="300"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("graphCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let data = JSON.parse(localStorage.getItem("aviatorData")) || [];
+    let x = 10;
+    let lastY = 150;
+
+    function drawPoint(x, y, color = "white", label = "") {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      if (label) {
+        ctx.fillStyle = "lime";
+        ctx.font = "12px Arial";
+        ctx.fillText(label, x + 5, y - 5);
+      }
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = "cyan";
+      ctx.stroke();
+    }
+
+    function addNewPoint(value) {
+      const y = 300 - value * 20;
+      drawLine(x - 50, lastY, x, y);
+
+      let color = value >= 2 ? "red" : value <= 1 ? "green" : "white";
+      drawPoint(x, y, color, value.toFixed(2));
+
+      data.push({ x, y, value });
+      localStorage.setItem("aviatorData", JSON.stringify(data));
+
+      lastY = y;
+      x += 50;
+    }
+
+    function redrawAll() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 1; i < data.length; i++) {
+        const prev = data[i - 1];
+        const curr = data[i];
+        drawLine(prev.x, prev.y, curr.x, curr.y);
+        let color = curr.value >= 2 ? "red" : curr.value <= 1 ? "green" : "white";
+        drawPoint(curr.x, curr.y, color, curr.value.toFixed(2));
+      }
+
+      if (data.length > 0) {
+        x = data[data.length - 1].x + 50;
+        lastY = data[data.length - 1].y;
+      }
+    }
+
+    function addManual() {
+      const value = prompt("Ingrese una cuota (ej. 1.56):");
+      const number = parseFloat(value);
+      if (!isNaN(number)) {
+        addNewPoint(number);
+      }
+    }
+
+    function clearData() {
+      if (confirm("¿Seguro que quieres borrar todo?")) {
+        localStorage.removeItem("aviatorData");
+        data = [];
+        x = 10;
+        lastY = 150;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // Simula un nuevo dato automático cada 2 segundos
+    setInterval(() => {
+      const simulatedValue = (Math.random() * 3).toFixed(2);
+      addNewPoint(parseFloat(simulatedValue));
+    }, 2000);
+
+    redrawAll();
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Gráfico Aviator con Scroll y Trazabilidad</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #111;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    h2 {
+      text-align: center;
+      padding: 10px;
+    }
+
+    #graphWrapper {
+      width: 100%;
+      height: 300px;
+      overflow-x: auto;
+      border: 2px solid #333;
+      background: #111;
+      white-space: nowrap;
+    }
+
+    #graphCanvas {
+      background-color: #111;
+      display: inline-block;
+    }
+
+    #controls {
+      text-align: center;
+      margin: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #222;
+      color: #0f0;
+      border: 1px solid #444;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+  <h2>📈 Gráfico Aviator (con scroll y trazabilidad)</h2>
+
+  <div id="controls">
+    <button onclick="addManual()">➕ Añadir dato manual</button>
+    <button onclick="clearData()">🧹 Borrar todo</button>
+  </div>
+
+  <div id="graphWrapper">
+    <canvas id="graphCanvas" width="5000" height="300"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("graphCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let data = JSON.parse(localStorage.getItem("aviatorData")) || [];
+    let x = 10;
+    let lastY = 150;
+
+    function drawPoint(x, y, color = "white", label = "") {
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      if (label) {
+        ctx.fillStyle = "lime";
+        ctx.font = "12px Arial";
+        ctx.fillText(label, x + 5, y - 5);
+      }
+    }
+
+    function drawLine(x1, y1, x2, y2) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = "cyan";
+      ctx.stroke();
+    }
+
+    function addNewPoint(value) {
+      const y = 300 - value * 20;
+      drawLine(x - 50, lastY, x, y);
+
+      let color = value >= 2 ? "red" : value <= 1 ? "green" : "white";
+      drawPoint(x, y, color, value.toFixed(2));
+
+      data.push({ x, y, value });
+      localStorage.setItem("aviatorData", JSON.stringify(data));
+
+      lastY = y;
+      x += 50;
+    }
+
+    function redrawAll() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 1; i < data.length; i++) {
+        const prev = data[i - 1];
+        const curr = data[i];
+        drawLine(prev.x, prev.y, curr.x, curr.y);
+        let color = curr.value >= 2 ? "red" : curr.value <= 1 ? "green" : "white";
+        drawPoint(curr.x, curr.y, color, curr.value.toFixed(2));
+      }
+
+      if (data.length > 0) {
+        x = data[data.length - 1].x + 50;
+        lastY = data[data.length - 1].y;
+      }
+    }
+
+    function addManual() {
+      const value = prompt("Ingrese una cuota (ej. 1.56):");
+      const number = parseFloat(value);
+      if (!isNaN(number)) {
+        addNewPoint(number);
+      }
+    }
+
+    function clearData() {
+      if (confirm("¿Seguro que quieres borrar todo?")) {
+        localStorage.removeItem("aviatorData");
+        data = [];
+        x = 10;
+        lastY = 150;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // Simula un nuevo dato automático cada 2 segundos
+    setInterval(() => {
+      const simulatedValue = (Math.random() * 3).toFixed(2);
+      addNewPoint(parseFloat(simulatedValue));
+    }, 2000);
+
+    redrawAll();
+  </script>
+</body>
+</html>

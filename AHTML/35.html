@@ -127,8 +127,9 @@
             justify-content: center;
         }
         #grafico-container {
+            overflow-x: auto;
             width: 100vw;
-            max-width: 1400px;
+            max-width: 100vw;
             margin: 30px auto 0 auto;
             border-radius: 12px;
             box-shadow: 0 2px 16px #00ffe733;
@@ -287,7 +288,7 @@
         <button onclick="borrarTodo()" style="background:#ff1744;color:#fff;">Borrar historial</button>
     </div>
     <div id="semillas-container"></div>
-    <div id="grafico-container">
+    <div id="grafico-container" style="overflow-x:auto; width:100vw; max-width:100vw;">
         <div id="grafico"></div>
     </div>
     <div id="estadisticas-box"></div>
@@ -328,16 +329,13 @@
         }
 
         function actualizarSemillas() {
-            while (datos.length > 20) {
-                datos.shift();
-                // historial.shift(); // NO BORRAR HISTORIAL
-            }
+            // NO BORRAR DATOS, solo mostrar las últimas 20 semillas visualmente
             guardarHistorial();
 
             const semillasDiv = document.getElementById('semillas-container');
             semillasDiv.innerHTML = '';
 
-            // Solo muestra las últimas 20 semillas en pantalla
+            // Solo muestra las últimas 20 semillas en pantalla (pero NO borra datos)
             let semillasAMostrar = datos.slice(-20);
             semillasAMostrar.forEach((valor, idx) => {
                 const semilla = document.createElement('div');
@@ -353,7 +351,7 @@
                     datos.splice(indexReal, 1);
                     historial.splice(indexReal, 1);
                     actualizarSemillas();
-                    actualizarGrafico();
+                    
                     mostrarTendencia();
                     mostrarAproximacion();
                     mostrarAcumulado();
@@ -696,32 +694,20 @@
                 hoverinfo: 'skip'
             });
 
-            // Líneas de soporte y resistencia y anotaciones
-            let soporte = Math.min(...y);
-            let resistencia = Math.max(...y);
-
-            // Índices donde se alcanza soporte y resistencia por primera vez
-            let idxSoporte = y.indexOf(soporte);
-            let idxResistencia = y.indexOf(resistencia);
-
-            // Valor de la semilla que causó el soporte/resistencia
-            let valorSoporte = idxSoporte > -1 ? datos[idxSoporte] : '';
-            let valorResistencia = idxResistencia > -1 ? datos[idxResistencia] : '';
-
-            // Calcula los 2 soportes y 2 resistencias móviles (mínimos y máximos únicos)
+            // Soportes y resistencias móviles
             let sortedY = [...new Set(y)].sort((a, b) => a - b);
             let soportes = sortedY.slice(0, 2);
             let resistencias = sortedY.slice(-2);
+
+            // Ancho dinámico
+            let anchoGrafico = Math.max(600, datos.length * 60, window.innerWidth * 0.95);
 
             let layout = {
                 title: 'Cascada Acumulada',
                 plot_bgcolor: '#181c2f',
                 paper_bgcolor: '#181c2f',
                 font: {color: '#00ffe7'},
-                xaxis: {
-                    title: 'Ronda',
-                    gridcolor: '#232946'
-                },
+                xaxis: {title: 'Ronda', gridcolor: '#232946'},
                 yaxis: {title: 'Acumulado', gridcolor: '#232946'},
                 yaxis2: {
                     title: 'RSI',
@@ -732,6 +718,7 @@
                     tickfont: {color: '#00ff6a'},
                     titlefont: {color: '#00ff6a'}
                 },
+                width: anchoGrafico,
                 height: 700,
                 margin: {l: 60, r: 60, t: 60, b: 60},
                 legend: {orientation: "h", y: -0.2},
@@ -779,31 +766,15 @@
                         line: { color: '#ff00cc', width: 3, dash: 'dot' }
                     }
                 ],
-                annotations: [] // No mostrar texto fijo, solo tooltip al pasar el mouse
+                annotations: []
             };
+
             Plotly.newPlot('grafico', segments, layout, {responsive: true});
 
-            // Detectar ruptura de soporte o resistencia
-            let alertaRuptura = '';
-            if (y.length > 1 && soportes.length > 0 && resistencias.length > 1) {
-                let ultimo = y[y.length - 1];
-                let penultimo = y[y.length - 2];
-                // Ruptura de soporte (baja por debajo del soporte más bajo)
-                if (penultimo >= soportes[0] && ultimo < soportes[0]) {
-                    alertaRuptura = '⚠️ ¡Ruptura de SOPORTE!';
-                }
-                // Ruptura de resistencia (sube por encima de la resistencia más alta)
-                if (penultimo <= resistencias[1] && ultimo > resistencias[1]) {
-                    alertaRuptura = '⚡ ¡Ruptura de RESISTENCIA!';
-                }
-            }
-
-            // Mostrar alerta visual si hay ruptura
-            const alertasDiv = document.getElementById('alertas');
-            if (alertaRuptura) {
-                alertasDiv.innerHTML = `<span class="alerta-tendencia" style="background:#ffefc2;color:#ff1744;border:2px solid #ff1744;">${alertaRuptura}</span>`;
-            } else {
-                mostrarTendencia();
+            // Scroll automático al final para ver el dato más reciente
+            const graficoContainer = document.getElementById('grafico-container');
+            if (graficoContainer) {
+                graficoContainer.scrollLeft = graficoContainer.scrollWidth;
             }
         }
 
